@@ -1,5 +1,7 @@
 //use std::any::type_name;
 use std::io::{Read, Write, stdin, stdout};
+
+use crate::errs::RuntimeError;
 pub struct Runtime {
     tape: [u8; 30000],
     pc: usize,
@@ -22,14 +24,14 @@ impl Runtime {
         self.dp = 0;
         self.bracket_map.clear();
     }
-    fn create_bracket_map(&mut self, code: &[u8]) {
+    fn create_bracket_map(&mut self, code: &[u8]) -> Result<(), RuntimeError> {
         self.bracket_map = vec![0; code.len()];
         let mut stack = Vec::<usize>::new();
         for i in 0..code.len() {
             match code[i] {
                 b'[' => stack.push(i),
                 b']' => {
-                    let open = stack.pop().expect("unmatched ]");
+                    let open = stack.pop().ok_or(RuntimeError::UnmatchedClosingBracket)?;
                     self.bracket_map[i] = open;
                     self.bracket_map[open] = i;
                 }
@@ -38,8 +40,9 @@ impl Runtime {
         }
 
         if !stack.is_empty() {
-            panic!("unmatched ]");
+            return Err(RuntimeError::UnmatchedOpenBracket);
         }
+        Ok(())
     }
     fn increment_dp(&mut self) {
         self.dp = (self.dp + 1) % self.tape.len();
@@ -58,10 +61,10 @@ impl Runtime {
         self.tape[self.dp] = self.tape[self.dp].wrapping_sub(1);
     }
 
-    pub fn run<T: AsRef<[u8]>>(&mut self, code: T) {
+    pub fn run<T: AsRef<[u8]>>(&mut self, code: T) -> Result<(), RuntimeError> {
         let code_bytes = code.as_ref();
 
-        self.create_bracket_map(code_bytes);
+        self.create_bracket_map(code_bytes)?;
 
         while self.pc < code_bytes.len() {
             // dbg!(self.pc);
@@ -70,11 +73,9 @@ impl Runtime {
                 b'<' => self.decrement_dp(),
                 b'.' => {
                     print!("{}", self.tape[self.dp] as char);
-                    stdout().flush().unwrap();
+                    stdout().flush()?;
                 }
-                b',' => stdin()
-                    .read_exact(&mut self.tape[self.dp..=self.dp])
-                    .unwrap(),
+                b',' => stdin().read_exact(&mut self.tape[self.dp..=self.dp])?,
                 b'[' => {
                     if self.tape[self.dp] == 0 {
                         self.pc = self.bracket_map[self.pc]
@@ -92,6 +93,7 @@ impl Runtime {
             self.pc += 1;
         }
         self.reset();
+        Ok(())
     }
 }
 

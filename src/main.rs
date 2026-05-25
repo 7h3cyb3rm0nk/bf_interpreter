@@ -1,18 +1,21 @@
+use bf_interpreter::Result;
 use bf_interpreter::Runtime;
-use std::{env, fs, process};
-
-fn main() {
+use bf_interpreter::errs::Error;
+use std::{env, fs};
+fn main() -> Result<()> {
     let mut runtime = Runtime::default();
-    if let Some(path) = env::args().nth(1) {
-        match fs::read(path) {
-            Ok(code) => runtime.run(code),
-            _ => {
-                eprintln!("failed to open file!");
-                process::exit(1);
-            }
+
+    let path = match env::args().nth(1) {
+        Some(path) => path,
+        None => {
+            println!("Usage: bf_interpreter file.bf");
+            return Err(Error::ArgumentError(
+                "Expected file path as argument".into(),
+            ));
         }
-    } else {
-        eprintln!("expected file path as an argument");
-        process::exit(1);
-    }
+    };
+
+    let code = fs::read(path)?;
+    let _ = runtime.run(code);
+    Ok(())
 }
