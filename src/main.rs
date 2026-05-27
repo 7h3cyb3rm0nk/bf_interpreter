@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     };
 
     let code = fs::read(path)?;
-    let _ = runtime.run(code);
+    runtime.run(code)?;
 
     Ok(())
 }
