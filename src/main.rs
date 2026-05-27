@@ -1,7 +1,8 @@
 use bf_interpreter::Result;
 use bf_interpreter::Runtime;
 use bf_interpreter::errs::Error;
-use std::{env, fs};
+use std::{env, fs, io};
+
 fn main() -> Result<()> {
     let mut runtime = Runtime::default();
 
@@ -17,5 +18,6 @@ fn main() -> Result<()> {
 
     let code = fs::read(path)?;
     let _ = runtime.run(code);
+
     Ok(())
 }
